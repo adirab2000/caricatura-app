@@ -66,26 +66,42 @@ Seja EXTREMAMENTE DETALHADO e preciso. Use adjetivos específicos.`
 
     // ETAPA 2: Gera prompt detalhado para a caricatura
     const promptBase = getPrompt(option);
-    const finalPrompt = `Create a VIBRANT CARTOON CARICATURE in Brazilian corporate infographic style.
+    const finalPrompt = `Create a CLEAN, MODERN and PROFESSIONAL CARICATURE ILLUSTRATION.
 
-${promptBase}
+STYLE:
+- Editorial cartoon style (not childish, not mascot)
+- Clean lines, flat colors, minimal shading
+- Professional, elegant, friendly look
+- White or very light background
+- Focus on the person’s face and expression
 
-PERSON DETAILS:
-- Name: ${name}
-- Role: ${role}
+PERSON (must resemble the real person):
+Name: ${name}
+Role: ${role}
 
-CRITICAL - EXACT PHYSICAL FEATURES TO PRESERVE:
+PHYSICAL FEATURES (MUST be preserved accurately):
 ${personDescription}
 
-MANDATORY REQUIREMENTS:
-1. Include name badge at bottom: "${name}"
-2. Below name, include: "${role}"
-3. ALL speech bubbles MUST be in BRAZILIAN PORTUGUESE (the specific phrases are already provided in the style guide above)
-4. The caricature MUST look like the person described above - preserve their unique features
-5. Use the exact colors specified in the style guide
-6. Include all icons mentioned in the style guide
+COMPOSITION RULES (VERY IMPORTANT):
+1. Central bust portrait (head and shoulders only)
+2. Maximum of 2 or 3 simple visual icons TOTAL
+3. Icons must be subtle, abstract and secondary
+4. NO decorative text, NO fake words, NO random phrases
+5. Do NOT invent slogans, buzzwords or nonsense text
+6. No speech bubbles unless explicitly described below
+7. The face is the hero — icons must never compete with it
 
-Create a vibrant, colorful, professional caricature following ALL guidelines above.`;
+TEXT RULES:
+- The ONLY text allowed is:
+  • Name: "${name}"
+  • Role: "${role}"
+- Text must be clean, readable and minimal
+- Do not add any other words, labels or phrases
+
+GOAL:
+Create a high-quality professional caricature that clearly resembles the real person,
+suitable for a corporate leadership or innovation event.
+`;
 
 
     // ETAPA 3: Gera imagem com DALL-E 3
