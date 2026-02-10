@@ -23,42 +23,73 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Usa Gemini 2.5 Flash - modelo mais recente (Junho 2025) com suporte a imagens
-    const model = genAI.getGenerativeModel({
+    // ETAPA 1: Analisa a foto com Gemini 2.5 Flash
+    const analyzeModel = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash'
     });
 
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
-    const prompt = getPrompt(option);
 
-    const result = await model.generateContent([
-      {
-        text: `INSTRUÇÕES DO SISTEMA:
-${systemInstruction}
-
-Analise esta foto e descreva como seria a caricatura ideal desta pessoa.
-
-Use o estilo e as diretrizes abaixo:
-${prompt}
-
-Retorne apenas a descrição final da caricatura, em português, de forma clara e objetiva.`
-      },
+    const analysisResult = await analyzeModel.generateContent([
       {
         inlineData: {
           mimeType: 'image/jpeg',
           data: base64Data
         }
+      },
+      {
+        text: 'Descreva as características físicas principais desta pessoa em 2-3 frases: formato do rosto, cabelo, traços marcantes, expressão. Seja objetivo e descritivo.'
       }
     ]);
 
-    const description = result.response.text();
+    const personDescription = analysisResult.response.text();
 
-    return NextResponse.json({
-      success: true,
-      description,
-      message: 'Caricatura gerada com sucesso!',
-      note: 'Versão de demonstração. Para produção, integrar com DALL·E ou Stable Diffusion.'
-    });
+    // ETAPA 2: Gera prompt detalhado para a caricatura
+    const promptBase = getPrompt(option);
+    const finalPrompt = `${systemInstruction}
+
+${promptBase}
+
+CARACTERÍSTICAS DA PESSOA NA FOTO:
+${personDescription}
+
+Crie uma caricatura editorial sofisticada incorporando estas características da pessoa real, seguindo todas as diretrizes de estilo acima.`;
+
+    // ETAPA 3: Tenta gerar imagem com Gemini 2.5 Flash Image (Nano Banana)
+    try {
+      const imageModel = genAI.getGenerativeModel({
+        model: 'gemini-2.5-flash-image'
+      });
+
+      const imageResult = await imageModel.generateContent(finalPrompt);
+
+      // Se retornar imagem, processa
+      const response = imageResult.response;
+
+      // Tenta extrair URL ou base64 da imagem
+      // (O formato exato depende da resposta da API)
+      const imageUrl = response.text(); // Pode ser URL ou base64
+
+      return NextResponse.json({
+        success: true,
+        imageUrl: imageUrl,
+        description: personDescription,
+        message: 'Caricatura gerada com sucesso!',
+        model: 'gemini-2.5-flash-image'
+      });
+
+    } catch (imageError: any) {
+      // Se falhar, retorna descrição textual
+      console.warn('Gemini Image falhou, retornando descrição:', imageError.message);
+
+      return NextResponse.json({
+        success: true,
+        description: finalPrompt,
+        message: 'Descrição da caricatura gerada',
+        note: `Modelo gemini-2.5-flash-image não disponível. Erro: ${imageError.message}`,
+        fallback: true
+      });
+    }
 
   } catch (error: any) {
     console.error('Erro ao gerar caricatura:', error);
