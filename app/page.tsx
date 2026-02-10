@@ -14,6 +14,8 @@ export default function Home() {
   const [step, setStep] = useState<'upload' | 'options' | 'processing' | 'result'>('upload');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [name, setName] = useState<string>('');
+  const [role, setRole] = useState<string>('');
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +36,7 @@ export default function Home() {
   };
 
   const handleGenerate = async () => {
-    if (!selectedImage || !selectedOption) return;
+    if (!selectedImage || !selectedOption || !name.trim() || !role.trim()) return;
 
     setStep('processing');
     setError(null);
@@ -48,6 +50,8 @@ export default function Home() {
         body: JSON.stringify({
           imageBase64: selectedImage,
           option: selectedOption,
+          name: name.trim(),
+          role: role.trim(),
         }),
       });
 
@@ -69,6 +73,8 @@ export default function Home() {
     setStep('upload');
     setSelectedImage(null);
     setSelectedOption(null);
+    setName('');
+    setRole('');
     setResult(null);
     setError(null);
   };
@@ -129,9 +135,42 @@ export default function Home() {
                     />
                   )}
                 </div>
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">
-                  Escolha seu foco de inovação
+                <h2 className="text-2xl font-bold text-slate-800 mb-4">
+                  Seus dados
                 </h2>
+
+                {/* Campos de Nome e Área */}
+                <div className="space-y-3 mb-6 max-w-md mx-auto">
+                  <div className="text-left">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Seu nome
+                    </label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Ex: Maria Silva"
+                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-primary focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="text-left">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Sua área
+                    </label>
+                    <input
+                      type="text"
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      placeholder="Ex: Diretora de Operações"
+                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:border-primary focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <h3 className="text-xl font-bold text-slate-800 mb-2">
+                  Escolha seu foco de inovação
+                </h3>
                 <p className="text-slate-600">
                   Qual destas áreas mais representa sua liderança?
                 </p>
@@ -172,7 +211,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={handleGenerate}
-                  disabled={!selectedOption}
+                  disabled={!selectedOption || !name.trim() || !role.trim()}
                   className="flex-1 btn-primary"
                 >
                   Gerar caricatura

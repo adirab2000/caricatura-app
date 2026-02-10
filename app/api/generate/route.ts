@@ -7,11 +7,11 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(req: NextRequest) {
   try {
-    const { imageBase64, option } = await req.json();
+    const { imageBase64, option, name, role } = await req.json();
 
-    if (!imageBase64 || !option) {
+    if (!imageBase64 || !option || !name || !role) {
       return NextResponse.json(
-        { error: 'Imagem e opção são obrigatórias' },
+        { error: 'Imagem, opção, nome e área são obrigatórios' },
         { status: 400 }
       );
     }
@@ -50,10 +50,20 @@ export async function POST(req: NextRequest) {
 
 ${promptBase}
 
-CARACTERÍSTICAS DA PESSOA NA FOTO:
+INFORMAÇÕES DA PESSOA:
+- Nome: ${name}
+- Área/Cargo: ${role}
+
+CARACTERÍSTICAS FÍSICAS DA PESSOA NA FOTO:
 ${personDescription}
 
-Crie uma caricatura editorial sofisticada incorporando estas características da pessoa real, seguindo todas as diretrizes de estilo acima.`;
+IMPORTANTE:
+- Inclua o NOME "${name}" em um badge/placa elegante na parte inferior da caricatura
+- Inclua o cargo "${role}" logo abaixo do nome (fonte menor)
+- Os balões de fala devem estar em PORTUGUÊS BRASILEIRO
+- A caricatura deve PARECER com a pessoa da foto (preservando características únicas)
+
+Crie uma caricatura vibrante, colorida e profissional incorporando TODAS as diretrizes acima.`;
 
     // ETAPA 3: Gera imagem com DALL-E 3
     if (!process.env.OPENAI_API_KEY) {
