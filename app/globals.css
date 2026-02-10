@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #2563eb;
+  --secondary: #7c3aed;
+}
+
+body {
+  @apply bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg
+           transition-all duration-200 shadow-md hover:shadow-lg active:scale-95
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary;
+  }
+
+  .btn-option {
+    @apply bg-white hover:bg-slate-50 text-slate-700 font-medium py-4 px-6 rounded-xl
+           border-2 border-slate-200 transition-all duration-200
+           hover:border-primary hover:text-primary hover:shadow-md
+           active:scale-95 text-left;
+  }
+
+  .btn-option.selected {
+    @apply border-primary bg-blue-50 text-primary;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl shadow-xl p-8;
+  }
+}
