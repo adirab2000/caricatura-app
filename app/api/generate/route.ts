@@ -55,41 +55,46 @@ ${personDescription}
 
 Crie uma caricatura editorial sofisticada incorporando estas características da pessoa real, seguindo todas as diretrizes de estilo acima.`;
 
-    // ETAPA 3: Tenta gerar imagem com Gemini 2.5 Flash Image (Nano Banana)
-    try {
-      const imageModel = genAI.getGenerativeModel({
-        model: 'gemini-2.5-flash-image'
-      });
-
-      const imageResult = await imageModel.generateContent(finalPrompt);
-
-      // Se retornar imagem, processa
-      const response = imageResult.response;
-
-      // Tenta extrair URL ou base64 da imagem
-      // (O formato exato depende da resposta da API)
-      const imageUrl = response.text(); // Pode ser URL ou base64
-
-      return NextResponse.json({
-        success: true,
-        imageUrl: imageUrl,
-        description: personDescription,
-        message: 'Caricatura gerada com sucesso!',
-        model: 'gemini-2.5-flash-image'
-      });
-
-    } catch (imageError: any) {
-      // Se falhar, retorna descrição textual
-      console.warn('Gemini Image falhou, retornando descrição:', imageError.message);
-
+    // ETAPA 3: Gera imagem com DALL-E 3
+    if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({
         success: true,
         description: finalPrompt,
-        message: 'Descrição da caricatura gerada',
-        note: `Modelo gemini-2.5-flash-image não disponível. Erro: ${imageError.message}`,
-        fallback: true
+        message: 'DALL-E 3 não configurado',
+        note: 'Adicione OPENAI_API_KEY nas variáveis de ambiente para gerar imagens reais.'
       });
     }
+
+    const dalleResponse = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'dall-e-3',
+        prompt: finalPrompt,
+        n: 1,
+        size: '1024x1024',
+        quality: 'standard'
+      })
+    });
+
+    if (!dalleResponse.ok) {
+      const error = await dalleResponse.json();
+      throw new Error(error.error?.message || 'Erro ao gerar imagem com DALL-E 3');
+    }
+
+    const dalleData = await dalleResponse.json();
+    const imageUrl = dalleData.data[0].url;
+
+    return NextResponse.json({
+      success: true,
+      imageUrl: imageUrl,
+      description: personDescription,
+      message: 'Caricatura gerada com sucesso!',
+      model: 'dall-e-3'
+    });
 
   } catch (error: any) {
     console.error('Erro ao gerar caricatura:', error);
