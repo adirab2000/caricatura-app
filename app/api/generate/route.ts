@@ -104,34 +104,38 @@ suitable for a corporate leadership or innovation event.
 `;
 
 
-    // ETAPA 3: Gera imagem com DALL-E 3
+    // ETAPA 3: Gera imagem com DALL·E 3 USANDO A IMAGEM ORIGINAL (edit/variation)
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({
         success: true,
         description: finalPrompt,
-        message: 'DALL-E 3 não configurado',
+        message: 'DALL·E 3 não configurado',
         note: 'Adicione OPENAI_API_KEY nas variáveis de ambiente para gerar imagens reais.'
       });
     }
 
-    const dalleResponse = await fetch('https://api.openai.com/v1/images/generations', {
+    // Converte base64 em Blob para envio multipart
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+    const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' });
+
+    const form = new FormData();
+    form.append('model', 'dall-e-3');
+    form.append('image', imageBlob, 'input.jpg');
+    form.append('prompt', finalPrompt);
+    form.append('size', '1024x1024');
+    form.append('quality', 'standard');
+
+    const dalleResponse = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
       },
-      body: JSON.stringify({
-        model: 'dall-e-3',
-        prompt: finalPrompt,
-        n: 1,
-        size: '1024x1024',
-        quality: 'standard'
-      })
+      body: form
     });
 
     if (!dalleResponse.ok) {
-      const error = await dalleResponse.json();
-      throw new Error(error.error?.message || 'Erro ao gerar imagem com DALL-E 3');
+      const errorText = await dalleResponse.text();
+      throw new Error(errorText || 'Erro ao gerar imagem com DALL·E 3 (edit)');
     }
 
     const dalleData = await dalleResponse.json();
