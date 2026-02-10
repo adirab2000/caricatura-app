@@ -23,9 +23,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Usa Gemini 1.5 Flash - modelo estável com suporte a imagens
+    // Usa Gemini 2.5 Flash - modelo mais recente (Junho 2025) com suporte a imagens
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash'
+      model: 'gemini-2.5-flash'
     });
 
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
