@@ -27,8 +27,7 @@ export async function POST(req: NextRequest) {
     // Nota: Se Gemini 2.0 não tiver geração de imagem disponível,
     // vamos usar Imagen via API separada
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash-exp',
-      systemInstruction: systemInstruction
+      model: 'gemini-2.0-flash-exp'
     });
 
     // Remove o prefixo data:image/...;base64, se existir
@@ -46,18 +45,28 @@ export async function POST(req: NextRequest) {
 
     const result = await model.generateContent([
       {
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: base64Data
-        }
-      },
-      `Analise esta foto e descreva como seria a caricatura ideal baseada nesta pessoa.
+        role: "user",
+        parts: [
+          {
+            text: `INSTRUÇÕES DO SISTEMA:
+${systemInstruction}`
+          },
+          {
+            inlineData: {
+              mimeType: "image/jpeg",
+              data: base64Data
+            }
+          },
+          {
+            text: `Analise esta foto e descreva como seria a caricatura ideal desta pessoa.
 
-      ${prompt}
+Use o estilo e as diretrizes abaixo:
+${prompt}
 
-      Retorne uma descrição detalhada em português de como a caricatura ficaria,
-      incluindo: características físicas exageradas, expressão facial, cores predominantes,
-      e como os elementos visuais estariam dispostos.`
+Retorne apenas a descrição final da caricatura, em português, de forma clara e objetiva.`
+          }
+        ]
+      }
     ]);
 
     const response = await result.response;
