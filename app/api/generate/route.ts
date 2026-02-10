@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getPrompt, systemInstruction } from '@/lib/prompts';
-
-// Inicializa o Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,54 +12,81 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json(
-        { error: 'API Key do Gemini não configurada' },
-        { status: 500 }
-      );
-    }
 
-    // ETAPA 1: Analisa a foto com Gemini 2.5 Flash
-    const analyzeModel = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash'
-    });
-
+    // ETAPA 1: Analisa a foto com GPT-4 Vision (melhor para detalhes faciais)
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
 
-    const analysisResult = await analyzeModel.generateContent([
-      {
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: base64Data
-        }
+    const visionResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
       },
-      {
-        text: 'Descreva as características físicas principais desta pessoa em 2-3 frases: formato do rosto, cabelo, traços marcantes, expressão. Seja objetivo e descritivo.'
-      }
-    ]);
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `Analise esta foto e descreva EM DETALHES as características físicas da pessoa:
+- Formato exato do rosto (oval, redondo, quadrado, triangular)
+- Cabelo: comprimento, cor, textura, estilo (liso/ondulado/cacheado)
+- Olhos: cor, formato, tamanho, expressão
+- Nariz: formato e tamanho
+- Boca e sorriso: formato dos lábios, tipo de sorriso
+- Pele: tom exato
+- Óculos, brincos, ou acessórios visíveis
+- Roupas: estilo, cor
+- Expressão facial geral
+- Qualquer característica marcante ou única
 
-    const personDescription = analysisResult.response.text();
+Seja EXTREMAMENTE DETALHADO e preciso. Use adjetivos específicos.`
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: imageBase64
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 500
+      })
+    });
+
+    if (!visionResponse.ok) {
+      throw new Error('Erro ao analisar imagem com GPT-4 Vision');
+    }
+
+    const visionData = await visionResponse.json();
+    const personDescription = visionData.choices[0].message.content;
 
     // ETAPA 2: Gera prompt detalhado para a caricatura
     const promptBase = getPrompt(option);
-    const finalPrompt = `${systemInstruction}
+    const finalPrompt = `Create a VIBRANT CARTOON CARICATURE in Brazilian corporate infographic style.
 
 ${promptBase}
 
-INFORMAÇÕES DA PESSOA:
-- Nome: ${name}
-- Área/Cargo: ${role}
+PERSON DETAILS:
+- Name: ${name}
+- Role: ${role}
 
-CARACTERÍSTICAS FÍSICAS DA PESSOA NA FOTO:
+CRITICAL - EXACT PHYSICAL FEATURES TO PRESERVE:
 ${personDescription}
 
-IMPORTANTE:
-- Inclua o NOME "${name}" em um badge/placa elegante na parte inferior da caricatura
-- Inclua o cargo "${role}" logo abaixo do nome (fonte menor)
-- Os balões de fala devem estar em PORTUGUÊS BRASILEIRO
-- A caricatura deve PARECER com a pessoa da foto (preservando características únicas)
+MANDATORY REQUIREMENTS:
+1. Include name badge at bottom: "${name}"
+2. Below name, include: "${role}"
+3. ALL speech bubbles MUST be in BRAZILIAN PORTUGUESE (the specific phrases are already provided in the style guide above)
+4. The caricature MUST look like the person described above - preserve their unique features
+5. Use the exact colors specified in the style guide
+6. Include all icons mentioned in the style guide
 
-Crie uma caricatura vibrante, colorida e profissional incorporando TODAS as diretrizes acima.`;
+Create a vibrant, colorful, professional caricature following ALL guidelines above.`;
+
 
     // ETAPA 3: Gera imagem com DALL-E 3
     if (!process.env.OPENAI_API_KEY) {
